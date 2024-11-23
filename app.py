@@ -1,15 +1,54 @@
+import os
 import re
 import gensim
 import joblib
 import numpy as np
+from dotenv import load_dotenv
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from flask import Flask, request, render_template
+from supabase import create_client, Client
+from flask import Flask,jsonify, request, render_template
 
 import warnings
 warnings.filterwarnings("ignore")
 
+load_dotenv() 
+url= os.environ['SUPABASE_URL']
+key= os.environ['SUPABASE_KEY']
+print(url,key)
+
+supabase: Client = create_client(url, key)
+
 app = Flask(__name__)
+LABELS=['bug','enhancement','question']
+
+def insert_into_db(issue_title,issue_body,predicted_label):
+    response = (supabase.table("issues")
+                         .select("*",count="exact")
+                         .execute())
+    issue_id=response.count+1
+    response = (supabase.table("issues")
+                        .insert({"id":issue_id,"issue_title": issue_title,'issue_body':issue_body,'predicted_label':predicted_label})
+                        .execute())
+    return issue_id
+
+def update_issue_in_db(issue_id,corrected_label):
+    # Check if an issue with the provided issue_id exists in the table 
+    response1 = (supabase.table("issues")
+                         .select("*",count="exact")
+                         .eq("id", issue_id)
+                         .execute())
+    #if the issue exists then update the label, otherwise return an error message  
+    if response1.count==1:
+        response2 = (supabase.table("issues")
+                            .update({"corrected_label": corrected_label})
+                            .eq("id", issue_id)
+                            .execute())
+        predicted_label=LABELS[response1.data[0]['predicted_label']]
+        return {"success":f"Label for issue id {issue_id} was changed from {predicted_label} to {LABELS[corrected_label]}"}
+    else:
+        return {'error':f'Issue with id {issue_id} does not exist'} 
+
 
 # To average the vectors of each word in a sentence to a single vector
 def avg_word2vec(doc):
@@ -39,15 +78,33 @@ def predict():
     if request.method == 'POST':
         issue_title=request.args['title']
         issue_body=request.args['body']
-    bug,enhancement,question=make_prediction(f'{issue_title} {issue_body}')
-    return f'Probability of bug: {bug:.2f} \nProbability of enhancement: {enhancement:.2f}\nProbability of question: {question:.2f}'
+
+        if issue_title=="":
+            return jsonify([{'error':'Please enter the issue title'}])
+        if issue_body=="":
+            return jsonify([{'error':'Please enter the issue body'}])
+        
+        preds=make_prediction(f'{issue_title} {issue_body}')
+        max_prob_label=preds.index(max(preds))
+        issue_id=insert_into_db(issue_title,issue_body,max_prob_label)
+        issue_label=LABELS[max_prob_label]
+        issue = [{'id':issue_id,'label': issue_label}]
+        # return f'Probability of bug: {bug:.2f} \nProbability of enhancement: {enhancement:.2f}\nProbability of question: {question:.2f}'
+        # return issue_label
+        return jsonify(issue)
 
 @app.route('/api/correct', methods=["POST"])
 def correct():
     if request.method == 'POST':
         issue_id=request.args['id']
-        corrected_label=request.args['label']
-    return f'Issue ID: {issue_id}'
+        corrected_label=str(request.args['label']).lower()
+
+        if issue_id=="" or not issue_id.isnumeric():
+            return jsonify([{'error':'Please enter a valid numeric issue id'}])
+        if corrected_label=="" or corrected_label not in LABELS:
+            return jsonify([{'error':'Please enter a valid corrected label (bug,enhancement,question)'}])
+
+    return jsonify([update_issue_in_db(int(issue_id),LABELS.index(corrected_label))])
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0',debug=True)
