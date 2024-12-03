@@ -15,7 +15,6 @@ warnings.filterwarnings("ignore")
 load_dotenv() 
 url= os.environ['SUPABASE_URL']
 key= os.environ['SUPABASE_KEY']
-print(url,key)
 
 supabase: Client = create_client(url, key)
 
@@ -49,9 +48,8 @@ def update_issue_in_db(issue_id,corrected_label):
     else:
         return {'error':f'Issue with id {issue_id} does not exist'} 
 
-
-# To average the vectors of each word in a sentence to a single vector
 def avg_word2vec(doc):
+    '''Averages the vectors of each word in a sentence to a single vector'''
     # remove out-of-vocabulary words
     w2v_model = gensim.models.Word2Vec.load("./models/word2vec.model")
     return np.mean([w2v_model.wv[word] for word in doc if word in w2v_model.wv.index_to_key],axis=0)
@@ -76,19 +74,19 @@ def make_prediction (issue):
 @app.route('/api/predict',methods=["POST"])
 def predict():
     if request.method == 'POST':
-        issue_title=request.args['title']
-        issue_body=request.args['body']
+        issue_title=request.form.get('title')
+        issue_body=request.form.get('body')
 
         if issue_title=="":
-            return jsonify([{'error':'Please enter the issue title'}])
+            return jsonify({'error':'Please enter the issue title'})
         if issue_body=="":
-            return jsonify([{'error':'Please enter the issue body'}])
+            return jsonify({'error':'Please enter the issue body'})
         
         preds=make_prediction(f'{issue_title} {issue_body}')
         max_prob_label=preds.index(max(preds))
         issue_id=insert_into_db(issue_title,issue_body,max_prob_label)
         issue_label=LABELS[max_prob_label]
-        issue = [{'id':issue_id,'label': issue_label}]
+        issue = {'id':issue_id,'label': issue_label}
         # return f'Probability of bug: {bug:.2f} \nProbability of enhancement: {enhancement:.2f}\nProbability of question: {question:.2f}'
         # return issue_label
         return jsonify(issue)
@@ -96,15 +94,17 @@ def predict():
 @app.route('/api/correct', methods=["POST"])
 def correct():
     if request.method == 'POST':
-        issue_id=request.args['id']
-        corrected_label=str(request.args['label']).lower()
+        issue_id=request.form.get('id')
+        corrected_label=str(request.form.get('label')).lower()
 
-        if issue_id=="" or not issue_id.isnumeric():
-            return jsonify([{'error':'Please enter a valid numeric issue id'}])
+        if issue_id=="":
+            return jsonify({'error':'Please enter an issue id'})
+        if not issue_id.isnumeric():    
+            return jsonify({'error':'Please enter a valid numeric issue id'})
         if corrected_label=="" or corrected_label not in LABELS:
-            return jsonify([{'error':'Please enter a valid corrected label (bug,enhancement,question)'}])
+            return jsonify({'error':'Please enter a valid corrected label (bug,enhancement,question)'})
 
-    return jsonify([update_issue_in_db(int(issue_id),LABELS.index(corrected_label))])
+    return jsonify(update_issue_in_db(int(issue_id),LABELS.index(corrected_label)))
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0',debug=True)
