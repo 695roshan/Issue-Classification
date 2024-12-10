@@ -3,6 +3,7 @@ import re
 import gensim
 import joblib
 import numpy as np
+from flask_cors import CORS
 from dotenv import load_dotenv
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -19,6 +20,7 @@ key= os.environ['SUPABASE_KEY']
 supabase: Client = create_client(url, key)
 
 app = Flask(__name__)
+CORS(app)
 LABELS=['bug','enhancement','question']
 
 def insert_into_db(issue_title,issue_body,predicted_label):
@@ -94,9 +96,9 @@ def predict():
 @app.route('/api/correct', methods=["POST"])
 def correct():
     if request.method == 'POST':
-        issue_id=request.form.get('id')
-        corrected_label=str(request.form.get('label')).lower()
-
+        issue_id=str(request.form.get('issue_id'))
+        corrected_label=str(request.form.get('corrected_label')).lower()
+        
         if issue_id=="":
             return jsonify({'error':'Please enter an issue id'})
         if not issue_id.isnumeric():    

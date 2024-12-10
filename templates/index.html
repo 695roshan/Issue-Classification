@@ -2,9 +2,185 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Test</title>
+    <title>Issue Classification</title>
 </head>
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center; /* Centers horizontally */
+        align-items: center;   /* Centers vertically */
+    }
+    .container {
+        display: table;
+        width: 40%;
+        font-size: 25px;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+    .row {
+        display: table-row;
+    }
+    .cell {
+        display: table-cell;
+        padding: 10px; /* Optional: Adds spacing between cells */
+    }
+    button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+    button[type="reset"] {
+        background-color: #6c757d;
+    }
+    button[type="reset"]:hover {
+        background-color: #5a6268;
+    }
+    input,textarea{
+        /*width: 300px;*/
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 20px;
+    }
+</style>
 <body>
-   <h1>Hello World</h1>
+    <div class="container">
+        <div class="row">
+            <div class="cell">
+                <form id="predictForm" method="POST">
+                    <label for="title">Title:</label>
+                    <br>
+                    <input name="title" id="title" type="text" required>
+                    <br><br>
+                    <label for="body">Body:</label>
+                    <br>
+                    <textarea name="body" id="body" title="body" cols="30" rows="10" required></textarea>
+                    <br><br>
+                    <button type="submit" id="predict" form="predictForm">Predict</button>
+                    <button type="reset" form="predictForm">Clear</button>
+                </form>
+            </div>
+            <div class="cell">
+                <form id="correctForm" method="POST">
+                    <p>Predicted label: </p>
+                    <input type="radio" id="bug" name="label" value="Bug">
+                    <label for="bug">Bug</label><br>
+                    <input type="radio" id="enhancement" name="label" value="Enhancement">
+                    <label for="enhancement">Enhancement</label><br>
+                    <input type="radio" id="question" name="label" value="Question">
+                    <label for="question">Question</label>
+
+                    <br><br>
+                    <button type="submit" id="correct" form="correctForm">Correct</button>
+                </form>
+                <div id="responseContainer"></div>
+            </div>
+        </div>
+    </div>
 </body>
+
+<script>
+    var issue_id;    
+    var predicted_label;
+    document.getElementById('predictForm').addEventListener('submit', async (event) => {
+        event.preventDefault(); // Prevent the default form submission
+
+        const title = document.getElementById('title').value;
+        const body = document.getElementById('body').value;
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': '*/*',
+                },
+                body: new URLSearchParams({ title, body }),
+            });
+
+            const result = await response.json();
+            
+            if (result.error) {
+                document.getElementById('responseContainer').textContent = `Error: ${result.error}`;
+                document.getElementById('responseContainer').style.color = 'red';
+            } else {
+                issue_id=result.id
+                predicted_label=result.label
+                /*document.getElementById('responseContainer').textContent = 
+                    `Issue ID: ${result.id}, Predicted Label: ${result.label}`;
+                document.getElementById('responseContainer').style.color = 'green';
+                */
+                if (predicted_label=='bug')
+                    document.getElementById('bug').checked = true;
+                else if(predicted_label=='enhancement')
+                    document.getElementById('enhancement').checked = true;
+                else if(predicted_label=='question')
+                    document.getElementById('question').checked = true;
+            }
+        } catch (error) {
+            document.getElementById('responseContainer').textContent = 
+                `An error occurred: ${error.message}`;
+            document.getElementById('responseContainer').style.color = 'red';
+        }
+    });
+    
+    document.getElementById('predictForm').addEventListener('reset', async (event) => {
+        event.preventDefault(); // Prevent the default form submission
+
+        document.getElementById('title').value=""
+        document.getElementById('body').value=""
+        document.getElementById('bug').checked = false
+        document.getElementById('enhancement').checked = false
+        document.getElementById('question').checked = false
+        document.getElementById('responseContainer').textContent=''
+    });
+
+    document.getElementById('correctForm').addEventListener('submit', async (event) => {
+        event.preventDefault(); // Prevent the default form submission
+        var corrected_label;
+        if(document.getElementById('bug').checked)
+            corrected_label='bug'
+        else if(document.getElementById('enhancement').checked)
+            corrected_label='enhancement'
+        else if(document.getElementById('question').checked)
+            corrected_label='question'
+        
+        if (corrected_label!=predicted_label){
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/correct', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': '*/*',
+                    },
+                    body: new URLSearchParams({ issue_id, corrected_label }),
+                });
+
+                const result = await response.json();
+                console.log(result)
+                if (result.error) {
+                    document.getElementById('responseContainer').textContent = `Error: ${result.error}`;
+                    document.getElementById('responseContainer').style.color = 'red';
+                } 
+                else {    
+                    document.getElementById('responseContainer').textContent = `${result.success}`;
+                    document.getElementById('responseContainer').style.color = 'green';
+                    
+                }
+            } catch (error) {
+                document.getElementById('responseContainer').textContent = 
+                    `An error occurred: ${error.message}`;
+                document.getElementById('responseContainer').style.color = 'red';
+            }
+        }
+        });
+</script>
+
 </html>
+
