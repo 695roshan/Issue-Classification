@@ -56,8 +56,8 @@ def test_correct_missing_id(client):
     """
     Test /api/correct endpoint with a missing issue_id
     """
-    test_input={'id': '', 
-                'label': 'bug'}
+    test_input={'issue_id': '', 
+                'corrected_label': 'bug'}
     expected_response = {'error':'Please enter an issue id'}
     
     actual_response = client.post('/api/correct', data=test_input)
@@ -68,8 +68,8 @@ def test_correct_nonint_id(client):
     """
     Test /api/correct endpoint with a non-integer issue_id
     """
-    test_input={'id': 'one', 
-                'label': 'bug'}
+    test_input={'issue_id': 'one', 
+                'corrected_label': 'bug'}
     expected_response = {'error':'Please enter a valid numeric issue id'}
     
     actual_response = client.post('/api/correct', data=test_input)
@@ -80,7 +80,7 @@ def test_correct_invalid_label(client):
     """
     Test /api/correct endpoint with an invalid label
     """
-    test_input={'id': '1', 'label': 'feature'}
+    test_input={'issue_id': '1', 'corrected_label': 'feature'}
     expected_response = {'error':'Please enter a valid corrected label (bug,enhancement,question)'}
     
     actual_response = client.post('/api/correct', data=test_input)
@@ -90,8 +90,8 @@ def test_correct_invalid_label(client):
 def test_correct_valid_input(client, mocker):
     """Test /api/correct with valid inputs."""
     test_input={
-        'id': 1,
-        'label': 'enhancement'
+        'issue_id': 1,
+        'corrected_label': 'enhancement'
     }
     mock_update_issue_in_db = mocker.patch('app.update_issue_in_db', return_value={
         "success": "Label for issue id 1 was changed from bug to enhancement"
