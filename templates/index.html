@@ -56,11 +56,11 @@
                 <form id="predictForm" method="POST">
                     <label for="title">Title:</label>
                     <br>
-                    <input name="title" id="title" type="text" required>
+                    <input name="title" id="title" type="text">
                     <br><br>
                     <label for="body">Body:</label>
                     <br>
-                    <textarea name="body" id="body" title="body" cols="30" rows="10" required></textarea>
+                    <textarea name="body" id="body" title="body" cols="30" rows="10"></textarea>
                     <br><br>
                     <button type="submit" id="predict" form="predictForm">Predict</button>
                     <button type="reset" form="predictForm">Clear</button>
@@ -70,15 +70,16 @@
                 <form id="correctForm" method="POST">
                     <p>Predicted label: </p>
                     <input type="radio" id="bug" name="label" value="Bug">
-                    <label for="bug">Bug</label><br>
+                    <label for="bug" id="bug_label">Bug</label><br>
                     <input type="radio" id="enhancement" name="label" value="Enhancement">
-                    <label for="enhancement">Enhancement</label><br>
+                    <label for="enhancement" id="enhancement_label">Enhancement</label><br>
                     <input type="radio" id="question" name="label" value="Question">
-                    <label for="question">Question</label>
+                    <label for="question" id="question_label">Question</label>
 
                     <br><br>
                     <button type="submit" id="correct" form="correctForm">Correct</button>
                 </form>
+                <br>
                 <div id="responseContainer"></div>
             </div>
         </div>
@@ -86,8 +87,9 @@
 </body>
 
 <script>
-    var issue_id;    
-    var predicted_label;
+    var issue_id    
+    var predicted_label
+    var probs
     document.getElementById('predictForm').addEventListener('submit', async (event) => {
         event.preventDefault(); // Prevent the default form submission
 
@@ -112,10 +114,14 @@
             } else {
                 issue_id=result.id
                 predicted_label=result.label
+                probs=result.probs
                 /*document.getElementById('responseContainer').textContent = 
                     `Issue ID: ${result.id}, Predicted Label: ${result.label}`;
                 document.getElementById('responseContainer').style.color = 'green';
                 */
+                document.getElementById('responseContainer').style.color  = 'black'
+                document.getElementById('responseContainer').textContent = `\n\nConfidence scores:
+                \nBug: ${probs[0]}\nEnhancement: ${probs[1]}\nQuestion: ${probs[2]}`;
                 if (predicted_label=='bug')
                     document.getElementById('bug').checked = true;
                 else if(predicted_label=='enhancement')

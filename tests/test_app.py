@@ -2,6 +2,7 @@ import pytest
 from app import app
 
 @pytest.fixture
+
 def client():
     app.testing = True
     with app.test_client() as client:
@@ -33,6 +34,30 @@ def test_predict_missing_body(client):
     assert actual_response.status_code == 200
     assert actual_response.get_json() == expected_response
 
+def test_predict_non_english_title(client):
+    """
+    Test /api/predict endpoint with a non-english issue title
+    """
+    test_input={'title': '今一はお前さん', 
+                'body': 'App crashes when clicking save button'}
+    expected_response={'error':'Please enter the issue title in English'}
+    
+    actual_response = client.post('/api/predict', data=test_input)
+    assert actual_response.status_code == 200
+    assert actual_response.get_json() == expected_response
+
+def test_predict_non_english_body(client):
+    """
+    Test /api/predict endpoint with a non-english issue body
+    """
+    test_input={'title': 'Is there an API I can use so I can upload in the terminal?', 
+                'body': 'App stürzt ab, wenn auf die Schaltfläche „Speichern“ geklickt wird'}
+    expected_response={'error':'Please enter the issue body in English'}
+    
+    actual_response = client.post('/api/predict', data=test_input)
+    assert actual_response.status_code == 200
+    assert actual_response.get_json() == expected_response
+
 def test_predict_valid_input(client, mocker):
     """Test /api/predict with valid inputs."""
     test_input={'title': 'App crashes', 
@@ -42,7 +67,7 @@ def test_predict_valid_input(client, mocker):
     mock_insert_into_db = mocker.patch('app.insert_into_db', return_value=1) # Mock the issue id
     mock_make_prediction = mocker.patch('app.make_prediction', return_value=[0.8, 0.1, 0.1])  # Mock probabilities
 
-    expected_response={'id':1,'label':'bug'}
+    expected_response={'id':1,'label':'bug','probs':[0.8, 0.1, 0.1]}
     
     actual_response = client.post('/api/predict', data=test_input)
 
@@ -104,3 +129,4 @@ def test_correct_valid_input(client, mocker):
     assert actual_response.get_json()==expected_response
     # Ensure the mock function is called
     mock_update_issue_in_db.assert_called_once()
+    
