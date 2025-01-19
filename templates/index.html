@@ -115,13 +115,20 @@
                 issue_id=result.id
                 predicted_label=result.label
                 probs=result.probs
-                /*document.getElementById('responseContainer').textContent = 
-                    `Issue ID: ${result.id}, Predicted Label: ${result.label}`;
-                document.getElementById('responseContainer').style.color = 'green';
-                */
-                document.getElementById('responseContainer').style.color  = 'black'
-                document.getElementById('responseContainer').textContent = `\n\nConfidence scores:
-                \nBug: ${probs[0]}\nEnhancement: ${probs[1]}\nQuestion: ${probs[2]}`;
+                warning=result.warning
+    
+                const responseContainer = document.getElementById('responseContainer');
+                responseContainer.innerHTML = `
+                    <p style="color: black;">
+                        Confidence scores:
+                        \nBug: ${probs[0]}
+                        \nEnhancement: ${probs[1]}
+                        \nQuestion: ${probs[2]}
+                    </p>
+                    <p style="color: red; margin-top: 10px;">
+                        ${warning}     
+                    </p>`;
+
                 if (predicted_label=='bug')
                     document.getElementById('bug').checked = true;
                 else if(predicted_label=='enhancement')

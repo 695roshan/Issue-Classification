@@ -1,0 +1,66 @@
+# version: "3"
+
+# services:
+#   flask_app_backend:
+#     image: flask
+#     command:
+#     ports:
+#       - 8000:8000
+#     restart: unless-stopped
+#     volumes:
+#       -
+#       -
+
+#   prometheus:
+#     image: prom/prometheus:latest
+#     ports:
+#       - "9090:9090"
+#     volumes:
+#       - ./config/prometheus.yaml:/etc/prometheus/prometheus.yml
+#       - prom_data:/prometheus
+#     restart: unless-stopped
+#     command:
+#       - "--config.file=/etc/prometheus/prometheus.yml"
+
+#   grafana:
+#     image: grafana/grafana:latest
+#     ports:
+#       - "3000:3000"
+#     volumes:
+#     restart: unless-stopped
+#     command: ""
+
+# networks:
+# monitoring_network:
+# driver: bridge
+
+# volumes:
+#   gefana_data: persistent volume
+
+version: '3.7'
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_data:/prometheus  # Persistent volume for Prometheus data
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # Configuration file
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana  # Persistent volume for Grafana data
+
+volumes:
+  prometheus_data:
+    driver: local  # Local storage for Prometheus
+  grafana_data:
+    driver: local  # Local storage for Grafana
