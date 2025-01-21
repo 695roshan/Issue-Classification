@@ -6,6 +6,7 @@ import numpy as np
 from flask_cors import CORS
 from langdetect import detect
 from dotenv import load_dotenv
+import nltk
 from nltk.corpus import stopwords
 
 from nltk.stem import WordNetLemmatizer
@@ -16,6 +17,7 @@ from prometheus_client import Counter, Gauge, Histogram, generate_latest, Summar
 
 import warnings
 warnings.filterwarnings("ignore")
+nltk.download('stopwords')
 
 # Metrics initialization
 accuracy_metric = Gauge('accuracy', 'Accuracy of predictions')
