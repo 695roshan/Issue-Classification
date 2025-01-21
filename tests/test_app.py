@@ -67,7 +67,7 @@ def test_predict_valid_input(client, mocker):
     mock_insert_into_db = mocker.patch('app.insert_into_db', return_value=1) # Mock the issue id
     mock_make_prediction = mocker.patch('app.make_prediction', return_value=[0.8, 0.1, 0.1])  # Mock probabilities
 
-    expected_response={'id':1,'label':'bug','probs':[0.8, 0.1, 0.1]}
+    expected_response={'id':1,'label':'bug','probs':[0.8, 0.1, 0.1],'warning': ""}
     
     actual_response = client.post('/api/predict', data=test_input)
 

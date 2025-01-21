@@ -131,17 +131,17 @@ def predict():
     if request.method == 'POST':
         issue_title=request.form.get('title')
         issue_body=request.form.get('body')
-        # Check if the title and body are in English 
-        if detect(issue_title)!='en':
-            return jsonify({'error':'Please enter the issue title in English'})
-        if detect(issue_body)!='en':
-            return jsonify({'error':'Please enter the issue body in English'})
-        
         # Check if the title and body are empty 
         if issue_title=="":
             return jsonify({'error':'Please enter the issue title'})
         if issue_body=="":
             return jsonify({'error':'Please enter the issue body'})
+        
+        # Check if the title and body are in English 
+        if detect(issue_title)!='en':
+            return jsonify({'error':'Please enter the issue title in English'})
+        if detect(issue_body)!='en':
+            return jsonify({'error':'Please enter the issue body in English'})
         
         # Check if the issue title and body only contain stopwords or not
         if filter_stopwords(issue_title)==[]:
