@@ -13,7 +13,7 @@ from nltk.stem import WordNetLemmatizer
 from supabase import create_client, Client
 from flask import Flask,jsonify, request,Response
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
-from prometheus_client import Counter, Gauge, Histogram, generate_latest, Summary
+from prometheus_client import Counter, Gauge, generate_latest, Summary
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -87,40 +87,56 @@ def avg_word2vec(doc):
     '''
     Averages the vectors of each word in a sentence to a single vector
     '''
-    # remove out-of-vocabulary words
+    #Load the model
     w2v_model = gensim.models.Word2Vec.load("./models/word2vec.model")
-    return np.mean([w2v_model.wv[word] for word in doc if word in w2v_model.wv.index_to_key],axis=0)
+    # remove out-of-vocabulary words
+    valid_words = [w2v_model.wv[word] for word in doc if word in w2v_model.wv.index_to_key]
+    if not valid_words:
+        return np.zeros(50)  # Return zero vector if no words are found
+    return np.mean(valid_words, axis=0)
 
 def filter_stopwords(text):
-    # remove unnecessary symbols and only keeps alphabets, ? and !
-    i = re.sub('[^a-zA-Z?!]', ' ', text)
-    # convert everything to lowercase
-    i = i.lower()
-    i = i.split()
-    # filter stopwords
-    i = [word for word in i if not word in stopwords.words('english')]
-    return i
+    # Noise Removal: converting every non alphabetical or non english character to blank space
+    preprocessed_text = re.sub('[^a-zA-Z?!]', ' ', text)
+    # Normalization: making every character lowercase
+    preprocessed_text = preprocessed_text.lower()
+    # Tokenization: splitting words by space
+    preprocessed_text = preprocessed_text.split()
+    preprocessed_text = [word for word in preprocessed_text if not word in stopwords.words('english')]
+    return preprocessed_text
 
-def make_prediction (issue):
+def make_prediction (issue_title,issue_body):
     '''
     Pre-processes the text and makes a prediction using the trained model
     Returns a list of the predicted probabilities of the labels  
     '''
-    # filter stopwords
-    i=filter_stopwords(issue)
+    # filter and normalize stopwords
+    preprocessed_title=filter_stopwords(issue_title)
+    preprocessed_body=filter_stopwords(issue_body)
+
     lemmatizer=WordNetLemmatizer()
     # perform lemmatization 
-    i = [lemmatizer.lemmatize(word) for word in i]
-    i = [' '.join(i)]
+    preprocessed_title = [lemmatizer.lemmatize(word) for word in preprocessed_title]
+    preprocessed_body = [lemmatizer.lemmatize(word) for word in preprocessed_body]    
 
-    x=[avg_word2vec(word) for word in i]
-    x = np.asarray(x, dtype="object")
+    # Compute separate vectors for title and body
+    title_vectors=[avg_word2vec(preprocessed_title)]
+    body_vectors=[avg_word2vec(preprocessed_body)]
+
+    # Convert to NumPy arrays
+    title_vectors = np.array(title_vectors)
+    body_vectors = np.array(body_vectors)
+
+    # Concatenate title and body vectors to form final feature vector
+    feature_vec = np.hstack((title_vectors, body_vectors))
+
     # the input to the model should be of the shape (1,100)
-    x.reshape(1,-1)
+    feature_vec.reshape(1,-1)
+
     # load the random forest classifier
     classifier = joblib.load("./models/rf_classifier.joblib")
 
-    return classifier.predict_proba(x).tolist()[0]
+    return classifier.predict_proba(feature_vec).tolist()[0]
 
 @app.route('/api/predict',methods=["POST"])
 @request_latency.time()
@@ -165,7 +181,7 @@ def predict():
         # Initialize a thread pool
         executor = ThreadPoolExecutor(max_workers=2)
         # Submit the prediction task to the thread pool
-        future = executor.submit(make_prediction, f'{issue_title} {issue_body}')
+        future = executor.submit(make_prediction, issue_title,issue_body)
         # If the prediction time exceeds a certain threshold we return an error
         PREDICTION_TIMEOUT = 20 #20 seconds
         # If the maximum probability is below a certain threshold we show a warning to the user
