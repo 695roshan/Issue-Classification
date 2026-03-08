@@ -11,7 +11,7 @@ from nltk.corpus import stopwords
 
 from nltk.stem import WordNetLemmatizer
 from supabase import create_client, Client
-from flask import Flask,jsonify, request,Response
+from flask import Flask,jsonify, request,Response,render_template
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from prometheus_client import Counter, Gauge, generate_latest, Summary
 
@@ -42,6 +42,10 @@ app = Flask(__name__)
 CORS(app)
 
 LABELS=['bug','enhancement','question']
+
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 @app.route('/metrics')
 def metrics():
