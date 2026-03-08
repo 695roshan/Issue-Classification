@@ -11,8 +11,6 @@ on:
 env:
   PYTHON_VERSION: "3.12.3"
   COVERAGE_DIR: "coverage_reports"
-  SUPABASE_URL: "https://dummy.supabase.co"
-  SUPABASE_KEY: "dummy_test_key"
 
 jobs:
   test:

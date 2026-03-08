@@ -1,12 +1,11 @@
-# Issue Classification Application
+# Issue Classification Application 
 
-A web application that automatically classifies Jira-like issues into categories (bug, enhancement, question) using Word2Vec embeddings and Random Forest classification.
+A simple web application that automatically classifies Jira-like issues into categories (bug, enhancement, question) using Word2Vec embeddings and Random Forest classification.
 
 ## Features
 
-- **Automated Issue Classification**: Classify issues as bug, enhancement, or question
+- **Automated Issue Classification**: Classify issues as bug, enhancement, or question.
 - **Option to correct wrongly predicted category**: If the user thinks the prediction is incorrect, it can be changed.
-
 - **Multi-language Support**: Detects and validates issue language (English only)
 - **Supabase Integration**: Persistent storage and retrieval of classifications
 - **Prometheus Metrics**: Real-time monitoring of predictions and accuracy
