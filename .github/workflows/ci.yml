@@ -11,6 +11,8 @@ on:
 env:
   PYTHON_VERSION: "3.12.3"
   COVERAGE_DIR: "coverage_reports"
+  SUPABASE_URL: "https://dummy.supabase.co"
+  SUPABASE_KEY: "dummy_test_key"
 
 jobs:
   test:
@@ -18,10 +20,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       
@@ -35,7 +37,7 @@ jobs:
         run: pytest --cov=app --cov=model --cov=ticket --cov=${{ env.COVERAGE_DIR }}/coverage.xml --cov-report=term-missing
       
       - name: Upload coverage report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: ${{ env.COVERAGE_DIR }}/coverage.xml
