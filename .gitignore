@@ -1,3 +1,4 @@
 __pycache__
 .pytest_cache
 old ver/
+.env

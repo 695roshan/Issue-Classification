@@ -33,10 +33,13 @@ total_correct = Counter('total_correct', 'Total correct predictions')
 confidence_sum = 0  # Total sum of confidence scores for average calculation
 
 load_dotenv() 
-url= os.environ['SUPABASE_URL']
-key= os.environ['SUPABASE_KEY']
+url= os.environ.get('SUPABASE_URL')
+key= os.environ.get('SUPABASE_KEY')
 
-supabase: Client = create_client(url, key)
+# Only initialize Supabase if both credentials are available
+supabase: Client = None
+if url and key:
+    supabase = create_client(url, key)
 
 app = Flask(__name__)
 CORS(app)
